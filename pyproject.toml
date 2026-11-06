@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ptmreloc"
+version = "0.1.0"
+description = "Prior-knowledge (PhosphoSitePlus) guided relocalization of low-confidence PTM sites on peptides"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.9"
+authors = [{ name = "Song Feng" }]
+dependencies = ["numpy>=1.22", "pandas>=1.4", "scipy>=1.8"]
+
+[project.optional-dependencies]
+excel = ["openpyxl"]
+parquet = ["pyarrow"]
+test = ["pytest"]
+
+[project.scripts]
+ptmreloc = "ptmreloc.cli:main"
+
+# The repository's database/ folder is shipped inside the package as `ptmreloc._data`
+[tool.setuptools]
+packages = ["ptmreloc", "ptmreloc._data"]
+include-package-data = false
+
+[tool.setuptools.package-dir]
+"ptmreloc" = "src/ptmreloc"
+"ptmreloc._data" = "database"
+
+[tool.setuptools.package-data]
+"ptmreloc._data" = ["*.csv", "*.tsv", "*.fasta", "*.txt", "*.md"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
