@@ -1,0 +1,19 @@
+Total mono-phosphorylated peptide: 133422
+Mono-phosphorylated peptide (AScore = 1000): 10143
+Mono-phosphorylated peptide (AScore = 0): 28281
+Mono-phosphorylated peptide (AScore < 20): 70114
+Low AScore ratio (Mono-pho peptides): 0.5255055388166869
+
+
+Total double-phosphorylated peptide: 41136
+Double phosphorylated peptide (AScore = 1000): 3225
+Double phosphorylated peptide (AScore = 0): 6283
+Double phosphorylated peptide (AScore < 20): 23700
+Low AScore ratio (Double phosphorylated peptides): 0.5761376896149358
+
+
+Total triple-phosphorylated peptide: 10427
+Triple phosphorylated peptide (AScore = 1000): 1155
+Triple phosphorylated peptide (AScore = 0): 965
+Triple phosphorylated peptide (AScore < 20): 5867
+Low AScore ratio (Triple phosphorylated peptides): 0.5626738275630574
