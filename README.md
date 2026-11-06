@@ -25,9 +25,11 @@ achievable FUN improvement that a weight set realizes.
 ## Install
 
 ```bash
-pip install -e .            # numpy, pandas, scipy
-pip install -e ".[test]"    # + pytest
+pip install ptmreloc              # numpy, pandas, scipy
+pip install "ptmreloc[excel]"     # + openpyxl, to read .xlsx inputs
 ```
+
+From a source checkout: `pip install -e ".[test]"`.
 
 ## Input
 
@@ -41,23 +43,41 @@ A peptide table with (column names configurable):
 | AScore  | `14.04`                    |
 
 If there is no `Residue` column, protein positions are annotated by locating each peptide in
-its protein sequence (first occurrence). This uses the bundled human proteome or your own
+its protein sequence (first occurrence). This uses the default human proteome or your own
 `fasta=`. Rows that cannot be located are passed through unchanged.
 
 ## Reference database
 
-The package ships a ready-to-use human reference database (the `database/` folder,
-installed as `ptmreloc._data`). Nothing needs to be preprocessed:
+`ptmreloc` uses a ready-to-use human reference database, so nothing needs to be preprocessed.
+The files are not part of the installed package. They are **downloaded once, on first use**
+(about 68 MB) from Zenodo ([10.5281/zenodo.23997751](https://doi.org/10.5281/zenodo.23997751))
+into a per-user cache folder, and checked against SHA-256 checksums:
 
 | dataset | file | used for |
 |---|---|---|
 | `psp`   | `phospho_site_plus_human_clustered_indexed_by_name.csv` | PhosphoSitePlus HTP/LTP evidence (scoring) |
 | `gold`  | `gold_standard_sites_reindexed.tsv` | Gold Standard sites (optimization / evaluation) |
 | `fun`   | `functional_landscape_sites_reindexed.tsv` | Functional Landscape scores (optimization / evaluation) |
-| `fasta` | `UP000005640_9606.fasta` | UniProt human proteome (residue annotation) |
+| `fasta` | `UP000005640_9606.fasta` | UniProt human reference proteome (residue annotation) |
+
+```bash
+ptmreloc download        # optional: fetch everything now (e.g. before going offline)
+ptmreloc info            # where each file is read from, cache folder, download URL
+```
+
+Only the files you need are fetched. `reassign` needs only `psp`, plus `fasta` when the
+input has no `Residue` column.
+
+**Data terms.** The reference files are derived from third-party resources and are not
+covered by this package's MIT license. PhosphoSitePlus data are subject to the
+[PhosphoSitePlus terms of use](https://www.phosphosite.org/staticDownloads), and the UniProt
+proteome is CC BY 4.0. Please cite the original resources when you use them.
+
+### Using your own data
 
 Each dataset can be replaced with your own, individually, as a file path or DataFrame
-(pkl / csv / tsv / parquet / xlsx; raw PSP `.txt` downloads work):
+(pkl / csv / tsv / parquet / xlsx; raw PSP `.txt` downloads work). Nothing is downloaded
+for datasets you supply:
 
 * PSP: `UniProt` or `ACC_ID`, `MOD_RSD` (e.g. `S8-p`), `MS_LIT`, `MS_CST`, `LT_LIT`
 * Gold Standard: `UniProt`, `Position in target protein`
@@ -65,14 +85,20 @@ Each dataset can be replaced with your own, individually, as a file path or Data
 * FASTA: UniProt-style headers (`>sp|P12345|NAME_HUMAN`) or plain IDs
 
 ```python
-pr.load_reference()                                   # everything bundled
-pr.load_reference(psp="my_psp.txt")                   # own PSP, bundled GS/FUN
-pr.load_reference(gold="my_gs.tsv", fun=False)        # bundled PSP, own GS, no FUN
+pr.load_reference()                                   # all default data
+pr.load_reference(psp="my_psp.txt")                   # own PSP, default GS/FUN
+pr.load_reference(gold="my_gs.tsv", fun=False)        # default PSP, own GS, no FUN
 pr.load_reference(database="path/to/other_db/")       # a folder with the same file names
 ```
 
-The database folder can also be set with the `PTMRELOC_DATABASE` environment variable, and
-`ptmreloc info` / `pr.database_info()` show which files are in use.
+Environment variables:
+
+| variable | effect |
+|---|---|
+| `PTMRELOC_DATABASE` | folder with the reference files (checked before the cache) |
+| `PTMRELOC_CACHE_DIR` | download cache folder |
+| `PTMRELOC_DATABASE_URL` | alternative download location (a base URL holding the files) |
+| `PTMRELOC_AUTO_DOWNLOAD=0` | never download automatically |
 
 ## Default weights
 
@@ -93,12 +119,12 @@ feature settings.
 ```python
 import ptmreloc as pr
 
-# Tables may be pandas DataFrames or file paths. Reference data defaults to the bundled database.
+# Tables may be pandas DataFrames or file paths. Reference data defaults to the human database.
 
 # 1. reassign with the default weights - no optimization, no reference files needed
 out = pr.reassign(peptides)                            # == pr.reassign(peptides, weights="medians")
 
-# 2. optimize weights for your data (against bundled GS/FUN)
+# 2. optimize weights for your data (against the default GS/FUN)
 res = pr.optimize(peptides, n_samples=2000, threshold=30, out_dir="opt/")
 print(res.summary())                                   # res.weights, res.trials, res.evaluation, res.by_ascore
 
@@ -123,7 +149,7 @@ out = pr.reassign(peptides, ref)
 | `compare_weights(peptides, psp=None, gold=None, fun=None, weight_sets=None)` | PSP, GS and/or FUN | DataFrame |
 | `load_reference(psp=None, gold=None, fun=None, database=None)` | | `ReferenceDB` |
 
-`None` means the bundled dataset and `False` disables GS or FUN. All functions also take `fasta=`.
+`None` means the default dataset and `False` disables GS or FUN. All functions also take `fasta=`.
 
 `weights` can be `None` (defaults), a preset name, a `weights.json` path, an `OptimizationResult`,
 a dict `{"w_H", "w_L", "w_D"}` or a 3-tuple. A weights file or result also supplies its threshold
@@ -140,9 +166,9 @@ Lower-level building blocks are exported too: `build_candidate_table`, `choose`,
 ## Command line
 
 ```bash
-ptmreloc info                                          # bundled database files, default weights
+ptmreloc info                                          # reference data files, default weights
 
-# reassign with the default weights and the bundled database
+# reassign with the default weights and the default reference data
 ptmreloc reassign -i peptides.tsv -o reassigned.tsv
 
 # optimize weights (Monte Carlo + differential-evolution refinement, 20% proteins held out)

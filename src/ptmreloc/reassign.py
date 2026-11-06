@@ -84,7 +84,7 @@ class Reassigner:
 
     Example
     -------
-    >>> ref = ptmreloc.load_reference(gold=False, fun=False)  # bundled PSP, or psp="my_psp.txt"
+    >>> ref = ptmreloc.load_reference(gold=False, fun=False)  # default PSP, or psp="my_psp.txt"
     >>> r = Reassigner(ref)  # default weights (DEFAULT_WEIGHTS), threshold 30
     >>> out = r.reassign(peptides_df)
     """

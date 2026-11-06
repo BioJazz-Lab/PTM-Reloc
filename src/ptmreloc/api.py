@@ -1,14 +1,14 @@
 """High-level library API: one call each for optimize / reassign / evaluate.
 
-Reference data defaults to the bundled human database (``database/``: PhosphoSitePlus,
-Gold Standard, Functional Landscape, UniProt FASTA). To use your own data, pass
+Reference data defaults to the human reference database (PhosphoSitePlus,
+Gold Standard, Functional Landscape, UniProt FASTA), downloaded once on first use. To use your own data, pass
 DataFrames or file paths (pkl/csv/tsv/parquet/xlsx) as ``psp=``, ``gold=``, ``fun=``,
-``fasta=``. Anything left as ``None`` falls back to the bundled file; ``False``
+``fasta=``. Anything left as ``None`` falls back to the default file; ``False``
 disables an optional table. A prebuilt :class:`ReferenceDB` can be passed as ``psp``
 (its own GS/FUN sites are used unless ``gold``/``fun`` are given explicitly).
 
 If the peptide table has no residue column, residues are annotated from the
-protein sequences (``fasta=``, default bundled human proteome).
+protein sequences (``fasta=``, the default human proteome).
 
 Weights (``weights=``) may be any of:
 
@@ -73,13 +73,13 @@ def load_reference(
     """Build the reference used for scoring (PSP) and for evaluation (GS, FUN).
 
     Each argument may be a DataFrame or file path (your own data), ``None`` (the
-    bundled dataset from ``database`` / the default database folder) or ``False``
+    default dataset from ``database`` / the default database folder) or ``False``
     (``gold``/``fun`` only: do not load). If ``psp`` is a :class:`ReferenceDB`, it is
     returned as is, or as a copy extended with explicitly given ``gold``/``fun`` tables.
 
-    >>> ref = load_reference()                          # all bundled
-    >>> ref = load_reference(psp="my_psp.tsv")          # own PSP, bundled GS/FUN
-    >>> ref = load_reference(gold=False, fun=False)     # bundled PSP only
+    >>> ref = load_reference()                          # all default
+    >>> ref = load_reference(psp="my_psp.tsv")          # own PSP, default GS/FUN
+    >>> ref = load_reference(gold=False, fun=False)     # default PSP only
     """
     if isinstance(psp, ReferenceDB):
         if gold is None and fun is None or gold is False and fun is False:
@@ -141,8 +141,8 @@ def optimize(
     ``holdout_frac``, ``top_frac``, ``gs_weight``, ``log10_bounds``, ``seed``, ``verbose`` ...).
     If ``out_dir`` is given, ``weights.json`` and the trial/evaluation tables are written there.
 
-    >>> res = ptmreloc.optimize("peptides.tsv")                      # bundled reference data
-    >>> res = ptmreloc.optimize(df, psp="my_psp.tsv", gold="my_gs.tsv")  # own data (FUN bundled)
+    >>> res = ptmreloc.optimize("peptides.tsv")                      # default reference data
+    >>> res = ptmreloc.optimize(df, psp="my_psp.tsv", gold="my_gs.tsv")  # own data (FUN default)
     >>> res.weights, res.summary()
     """
     ref = load_reference(psp, gold, fun, organism)
@@ -172,11 +172,11 @@ def reassign(
     """Relocalize sites of peptides with AScore <= threshold. Only PSP is required.
 
     Without ``weights`` the package defaults are used (threshold 30); without
-    ``psp`` the bundled PhosphoSitePlus table is used.
+    ``psp`` the default PhosphoSitePlus table is used.
     Returns the input table plus ``NewPeptide``, ``NewResidue``, ``Reassigned``,
     ``ReassignStatus``, ``OriginalSiteProb``, ``NewSiteProb`` (and ``CandidateSiteProbs``).
 
-    >>> out = ptmreloc.reassign(df)                                    # bundled PSP, default weights
+    >>> out = ptmreloc.reassign(df)                                    # default PSP, default weights
     >>> out = ptmreloc.reassign(df, psp="my_psp.tsv", weights="opt/weights.json")
     """
     w, thr, cfg = _settings(weights, threshold, config)
@@ -224,7 +224,7 @@ def evaluate(
 ) -> EvaluationReport:
     """Score a weight set against GS/FUN sites, overall and per AScore bin.
 
-    >>> rep = ptmreloc.evaluate(df)                                    # bundled data, default weights
+    >>> rep = ptmreloc.evaluate(df)                                    # default data, default weights
     >>> print(rep.summary())
     """
     w, thr, cfg = _settings(weights, threshold, config)
