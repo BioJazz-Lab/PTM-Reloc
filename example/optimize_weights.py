@@ -1,7 +1,7 @@
 """Example: optimize the reassignment weights on the MCF10A EGF time-course phosphoproteome.
 
 The weights (w_H, w_L, w_D) are tuned so that relocalized sites agree as much as
-possible with the Gold Standard and Functional Landscape sites in the bundled
+possible with the Gold Standard and Functional Landscape sites in the default
 reference database. The best weights are written to ``results/<sheet>/weights.json``,
 which ``reassign_sites.py`` can use.
 
@@ -39,7 +39,7 @@ def main():
     print(f"{args.sheet}: {len(peptides)} phosphopeptides, "
           f"{(peptides['AScore'] <= args.threshold).sum()} with AScore <= {args.threshold:g}")
 
-    # 2. Optimize. The bundled PhosphoSitePlus / Gold Standard / Functional Landscape
+    # 2. Optimize. The default PhosphoSitePlus / Gold Standard / Functional Landscape
     #    tables are used; pass psp=, gold=, fun= to use your own.
     result = pr.optimize(
         peptides,

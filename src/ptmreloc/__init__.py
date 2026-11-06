@@ -1,12 +1,12 @@
 """ptmreloc — prior-knowledge guided relocalization of low-confidence PTM sites.
 
-Quick start. The bundled human reference database (PhosphoSitePlus, Gold Standard,
-Functional Landscape, UniProt FASTA) is used unless you pass your own tables::
+Quick start. The human reference database (PhosphoSitePlus, Gold Standard, Functional
+Landscape, UniProt FASTA) is downloaded once on first use, unless you pass your own tables::
 
     import ptmreloc as pr
 
-    out = pr.reassign(peptides)                          # default weights, bundled PSP
-    res = pr.optimize(peptides, out_dir="opt/")          # optimize against bundled GS/FUN
+    out = pr.reassign(peptides)                          # default weights, default PSP
+    res = pr.optimize(peptides, out_dir="opt/")          # optimize against default GS/FUN
     out = pr.reassign(peptides, weights=res)             # or weights="opt/weights.json"
     rep = pr.evaluate(peptides, weights=res); print(rep.summary())
 
@@ -17,8 +17,8 @@ The lower-level building blocks (``build_candidate_table``, ``choose``,
 ``evaluate_selection``, ``optimize_weights``, ``Reassigner``) are exported too.
 """
 from .api import EvaluationReport, compare_weights, evaluate, load_reference, optimize, reassign, resolve_weights
-from .database import (DATABASE_FILES, annotate_residues, database_dir, database_file,
-                       database_info, default_proteome, default_reference, read_fasta)
+from .database import (DATABASE_FILES, annotate_residues, cache_dir, database_dir, database_file,
+                       database_info, default_proteome, default_reference, download_database, read_fasta)
 from .defaults import DEFAULT_THRESHOLD, DEFAULT_WEIGHTS, WEIGHT_PRESETS
 from .engine import choose, site_scores
 from .features import FEATURE_NAMES, WEIGHT_NAMES, CandidateTable, FeatureConfig, build_candidate_table
@@ -35,8 +35,9 @@ __all__ = [
     # high-level API
     "optimize", "reassign", "evaluate", "compare_weights", "load_reference", "resolve_weights",
     "EvaluationReport", "OptimizationResult",
-    # bundled database
-    "DATABASE_FILES", "database_dir", "database_file", "database_info", "default_reference",
+    # reference database
+    "DATABASE_FILES", "download_database", "cache_dir", "database_dir", "database_file", "database_info",
+    "default_reference",
     "default_proteome", "read_fasta", "annotate_residues",
     # defaults
     "DEFAULT_WEIGHTS", "DEFAULT_THRESHOLD", "WEIGHT_PRESETS",

@@ -15,14 +15,14 @@ from .reference import read_table, write_table
 
 def _add_common(p: argparse.ArgumentParser, targets: bool) -> None:
     p.add_argument("-i", "--input", required=True, help="peptide table (pkl/csv/tsv/parquet/xlsx)")
-    g = p.add_argument_group("reference data (default: bundled human database)")
+    g = p.add_argument_group("reference data (default: human reference database, downloaded on first use)")
     g.add_argument("--psp", default=None, help="own PhosphoSitePlus site table")
     if targets:
         g.add_argument("--gold", default=None, help="own Gold Standard site table ('none' to disable)")
         g.add_argument("--fun", default=None, help="own Functional Landscape site table ('none' to disable)")
     g.add_argument("--fasta", default=None,
                    help="own protein FASTA, used only when the input has no residue column")
-    g.add_argument("--database", default=None, help="folder with the bundled-format files to use instead")
+    g.add_argument("--database", default=None, help="folder with reference files (same names) to use instead")
     g.add_argument("--organism", default=None, help="filter own PSP by ORGANISM (e.g. human)")
     p.add_argument("--sheet", default=None, help="Excel sheet name for --input")
     g = p.add_argument_group("input columns")
@@ -117,12 +117,21 @@ def cmd_evaluate(a) -> int:
 
 
 def cmd_info(a) -> int:
-    from .database import database_info
+    from .database import _database_url, cache_dir, database_info
 
     with __import__("pandas").option_context("display.width", 200, "display.max_colwidth", 120):
         print(database_info(a.database).to_string(index=False))
+    print(f"\ndownload cache: {cache_dir()}\ndownload URL:   {_database_url() or '(not configured)'}")
     print(f"\ndefault weights: {DEFAULT_WEIGHTS}, AScore threshold {DEFAULT_THRESHOLD:g}")
     print(f"presets: {', '.join(WEIGHT_PRESETS)}")
+    return 0
+
+
+def cmd_download(a) -> int:
+    from .database import download_database
+
+    dest = download_database(url=a.url, dest=a.dest, force=a.force, verify=not a.no_verify)
+    print(f"reference data ready in {dest}")
     return 0
 
 
@@ -130,9 +139,16 @@ def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(prog="ptmreloc", description="Prior-knowledge guided PTM site relocalization")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
-    p = sub.add_parser("info", help="show the bundled database and default weights")
+    p = sub.add_parser("info", help="show the reference data files in use and the default weights")
     p.add_argument("--database", default=None)
     p.set_defaults(func=cmd_info)
+
+    p = sub.add_parser("download", help="download the reference data (otherwise fetched on first use)")
+    p.add_argument("--url", default=None, help="base URL of the data files (default: the package's)")
+    p.add_argument("--dest", default=None, help="target folder (default: the per-user cache)")
+    p.add_argument("--force", action="store_true", help="download again even if present")
+    p.add_argument("--no-verify", action="store_true", help="skip checksum verification")
+    p.set_defaults(func=cmd_download)
 
     p = sub.add_parser("optimize", help="optimize weights against Gold Standard / Functional sites")
     _add_common(p, targets=True)

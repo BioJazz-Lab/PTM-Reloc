@@ -307,3 +307,68 @@ def test_database_dir_env_var(tmp_path, monkeypatch, reference):
 def test_cli_info():
     if _has_db():
         assert main(["info"]) == 0
+
+
+# ---------------------------------------------------------------- data download
+import ptmreloc.database as dbmod
+from pathlib import Path
+
+REPO_DB = Path(__file__).resolve().parents[1] / "database"
+needs_repo_db = pytest.mark.skipif(not (REPO_DB / pr.DATABASE_FILES["gold"]).is_file(),
+                                   reason="repository database/ folder not available")
+
+
+@pytest.fixture
+def isolated_db(tmp_path, monkeypatch):
+    """No repository data, empty cache, no env overrides."""
+    monkeypatch.setattr(dbmod, "_source_tree_dir", lambda: tmp_path / "no_repo_db")
+    monkeypatch.setenv("PTMRELOC_CACHE_DIR", str(tmp_path / "cache"))
+    for v in ("PTMRELOC_DATABASE", "PTMRELOC_DATABASE_URL", "PTMRELOC_AUTO_DOWNLOAD"):
+        monkeypatch.delenv(v, raising=False)
+    monkeypatch.setattr(dbmod, "DATABASE_URL", None)
+    dbmod._cached_reference.cache_clear()
+    yield tmp_path / "cache"
+    dbmod._cached_reference.cache_clear()
+
+
+def test_missing_data_without_url_explains(isolated_db):
+    with pytest.raises(FileNotFoundError, match="ptmreloc download"):
+        pr.database_file("gold")
+    with pytest.raises(RuntimeError):
+        pr.download_database()
+    assert not pr.database_info().present.any()
+
+
+@needs_repo_db
+def test_download_database_verified(isolated_db):
+    dest = pr.download_database(url=REPO_DB.as_uri(), datasets=["gold"], quiet=True)
+    assert dest == isolated_db
+    f = dest / pr.DATABASE_FILES["gold"]
+    assert dbmod._sha256(f) == dbmod.DATABASE_SHA256["gold"]
+    assert f.stat().st_mode & 0o044  # readable by group/others (not mkstemp's 0600), umask permitting
+    mtime = f.stat().st_mtime_ns
+    pr.download_database(url=REPO_DB.as_uri(), datasets=["gold"], quiet=True)  # already there -> skipped
+    assert f.stat().st_mtime_ns == mtime
+
+
+@needs_repo_db
+def test_auto_download_on_first_use(isolated_db, monkeypatch):
+    monkeypatch.setenv("PTMRELOC_DATABASE_URL", REPO_DB.as_uri())
+    f = pr.database_file("gold")
+    assert f == isolated_db / pr.DATABASE_FILES["gold"] and f.is_file()
+    monkeypatch.setenv("PTMRELOC_AUTO_DOWNLOAD", "0")
+    with pytest.raises(FileNotFoundError):
+        pr.database_file("fun")
+
+
+def test_checksum_mismatch_is_rejected(isolated_db, tmp_path):
+    bad = tmp_path / "bad_host"
+    bad.mkdir()
+    (bad / pr.DATABASE_FILES["gold"]).write_text("not the real file\n")
+    with pytest.raises(ValueError, match="checksum"):
+        pr.download_database(url=bad.as_uri(), datasets=["gold"], quiet=True)
+    assert not (isolated_db / pr.DATABASE_FILES["gold"]).exists()
+    assert not list(isolated_db.glob(".download-*"))  # temp file cleaned up
+    # a self-hosted different version is accepted with verify=False
+    pr.download_database(url=bad.as_uri(), datasets=["gold"], verify=False, quiet=True)
+    assert (isolated_db / pr.DATABASE_FILES["gold"]).is_file()

@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -7,9 +7,20 @@ name = "ptmreloc"
 version = "0.1.0"
 description = "Prior-knowledge (PhosphoSitePlus) guided relocalization of low-confidence PTM sites on peptides"
 readme = "README.md"
-license = { file = "LICENSE" }
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.9"
 authors = [{ name = "Song Feng" }]
+keywords = ["proteomics", "phosphoproteomics", "PTM", "phosphosite", "site localization",
+            "AScore", "PhosphoSitePlus", "mass spectrometry"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
 dependencies = ["numpy>=1.22", "pandas>=1.4", "scipy>=1.8"]
 
 [project.optional-dependencies]
@@ -20,17 +31,9 @@ test = ["pytest"]
 [project.scripts]
 ptmreloc = "ptmreloc.cli:main"
 
-# The repository's database/ folder is shipped inside the package as `ptmreloc._data`
-[tool.setuptools]
-packages = ["ptmreloc", "ptmreloc._data"]
-include-package-data = false
-
-[tool.setuptools.package-dir]
-"ptmreloc" = "src/ptmreloc"
-"ptmreloc._data" = "database"
-
-[tool.setuptools.package-data]
-"ptmreloc._data" = ["*.csv", "*.tsv", "*.fasta", "*.txt", "*.md"]
+# Code only: the reference data (database/) is downloaded on first use, not packaged.
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

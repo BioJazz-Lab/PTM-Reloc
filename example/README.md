@@ -5,9 +5,9 @@ These examples use the EGF time-course phosphoproteomics data of MCF10A and HS57
 `HS578T_phospho` hold about 45k phosphopeptides each, with `UniProt`, `Peptide`, `Residue` and
 `AScore` columns plus the TMT quantification.
 
-Both scripts assume `ptmreloc` is installed with Excel support (`pip install ".[excel]"` from
+Both scripts assume `ptmreloc` is installed with Excel support (`pip install "ptmreloc[excel]"`, or `pip install ".[excel]"` from
 the repository root, which adds `openpyxl`) and
-use the bundled reference database. They can be run from any folder.
+use the default reference database (downloaded automatically on first use). They can be run from any folder.
 
 ## 1. Optimize the weights: `optimize_weights.py`
 

@@ -45,7 +45,7 @@ def main():
         threshold = pr.DEFAULT_THRESHOLD
     print(f"weights: {weights}\nAScore threshold: {threshold:g}\n")
 
-    # Load the bundled PhosphoSitePlus table once and reuse it for both cell lines.
+    # Load the default PhosphoSitePlus table once and reuse it for both cell lines.
     # (Use pr.load_reference(psp="my_psp.txt", ...) for your own reference data.)
     reference = pr.load_reference(gold=False, fun=False)
 
